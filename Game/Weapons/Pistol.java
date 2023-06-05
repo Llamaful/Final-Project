@@ -9,7 +9,7 @@ public class Pistol implements Weapon {
   public Texture texture;
 
   public Pistol() {
-    texture = new Texture("Images/pistol.png");
+    texture = new Texture("Images/pistol.png", 32, 32);
   }
 
   public void draw(Graphics2D g, ImageObserver io, int x, int y, double rotation) {
