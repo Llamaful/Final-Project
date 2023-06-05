@@ -101,6 +101,9 @@ public class Panel extends JPanel {
     test.draw(g, this, 50, 50);
 
     player.draw(g);
-    weapon.draw((Graphics2D)g, this, (int)player.x, (int)player.y, 0.2);
+
+    if (mouse == null) return;
+    final double angle = Math.atan2(mouse.getY() - player.y, mouse.getX() - player.x);
+    weapon.draw((Graphics2D)g, this, (int)(player.x + Math.cos(angle) * player.size / 2), (int)(player.y + Math.sin(angle) * player.size / 2), angle);
   }
 }

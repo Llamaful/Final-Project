@@ -4,7 +4,7 @@ import java.awt.Graphics;
 
 public class Player {
   public final int MAX_HEALTH = 100, ACCELERATION = 4000, SPEED = 10000;
-  public final int width = 30, height = 30;
+  public final int size = 50;
   public double x, y, dx, dy, health;
 
   public Player() {
@@ -25,6 +25,6 @@ public class Player {
 
   public void draw(Graphics g) {
     g.setColor(Color.RED);
-    g.fillOval((int)x, (int)y, 50, 50);
+    g.fillOval((int)x-size/2, (int)y-size/2, size, size);
   }
 }
