@@ -1,3 +1,6 @@
+import Game.*;
+import Game.Weapons.*;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -10,8 +13,11 @@ public class Panel extends JPanel {
   final int UPDATE_MS = 50;
 
   Player player = new Player();
+  Weapon weapon = new Pistol();
 
   double dir_x = 0, dir_y = 0;
+
+  Point mouse;
   
   public Panel() {
     setBackground(BG_COLOR);
@@ -53,8 +59,12 @@ public class Panel extends JPanel {
   }
 
   private class Mouse implements MouseListener, MouseMotionListener {
-    public void mouseDragged(MouseEvent e) {}
-    public void mouseMoved(MouseEvent e) {}
+    public void mouseDragged(MouseEvent e) {
+      mouse = e.getPoint();
+    }
+    public void mouseMoved(MouseEvent e) {
+      mouse = e.getPoint();
+    }
     public void mouseClicked(MouseEvent e) {
       System.out.println("Clicked!");
     }
@@ -66,8 +76,8 @@ public class Panel extends JPanel {
 
   public class TimerListener implements ActionListener {
     public void actionPerformed(ActionEvent e) {
-      player.dx += dir_x * player.ACCELERATION;
-      player.dy += dir_y * player.ACCELERATION;
+      player.dx += dir_x * player.ACCELERATION * UPDATE_MS / 1000.0;
+      player.dy += dir_y * player.ACCELERATION * UPDATE_MS / 1000.0;
       if (magnitude(player.dx, player.dy) > player.SPEED) {
         double angle = Math.atan2(dir_y, dir_x);
         player.dx = Math.cos(angle) * player.SPEED;
@@ -91,5 +101,6 @@ public class Panel extends JPanel {
     test.draw(g, this, 50, 50);
 
     player.draw(g);
+    weapon.draw((Graphics2D)g, this, (int)player.x, (int)player.y, 0.2);
   }
 }

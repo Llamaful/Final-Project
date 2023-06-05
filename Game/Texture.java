@@ -1,3 +1,5 @@
+package Game;
+
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.ImageObserver;
@@ -12,7 +14,7 @@ public class Texture {
     try {
       texture = ImageIO.read(new File(pathname));
     } catch (Exception e) {
-      System.out.println("ERROR: Image not found!");
+      System.out.println("ERROR: Image not found! Attempted: " + pathname);
     }
   }
 
@@ -22,7 +24,7 @@ public class Texture {
       this.width = width;
       this.height = height;
     } catch (Exception e) {
-      System.out.println("ERROR: Image not found!");
+      System.out.println("ERROR: Image not found! Attempted: " + pathname);
     }
   }
 

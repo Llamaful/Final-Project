@@ -1,8 +1,9 @@
+package Game;
 import java.awt.Color;
 import java.awt.Graphics;
 
 public class Player {
-  public final int MAX_HEALTH = 100, ACCELERATION = 300, SPEED = 1000;
+  public final int MAX_HEALTH = 100, ACCELERATION = 4000, SPEED = 10000;
   public final int width = 30, height = 30;
   public double x, y, dx, dy, health;
 
