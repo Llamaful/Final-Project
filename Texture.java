@@ -26,7 +26,7 @@ public class Texture {
     }
   }
 
-  public void drawImage(Graphics g, ImageObserver io, int x, int y) {
+  public void draw(Graphics g, ImageObserver io, int x, int y) {
     g.drawImage(texture, x, y, width == null ? texture.getWidth(io) : width, height == null ? texture.getHeight(io) : height, io);
   }
 }
