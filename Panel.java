@@ -7,7 +7,7 @@ import java.awt.event.*;
 public class Panel extends JPanel {
   public static final Color BG_COLOR = Color.decode("0x181819");
 
-  final int UPDATE_MS = 100;
+  final int UPDATE_MS = 50;
 
   Player player = new Player();
 
@@ -66,10 +66,22 @@ public class Panel extends JPanel {
 
   public class TimerListener implements ActionListener {
     public void actionPerformed(ActionEvent e) {
-      player.x += dir_x * Player.SPEED * UPDATE_MS / 1000.0;
-      player.y += dir_y * Player.SPEED * UPDATE_MS / 1000.0;
+      player.dx += dir_x * player.ACCELERATION;
+      player.dy += dir_y * player.ACCELERATION;
+      if (magnitude(player.dx, player.dy) > player.SPEED) {
+        double angle = Math.atan2(dir_y, dir_x);
+        player.dx = Math.cos(angle) * player.SPEED;
+        player.dy = Math.sin(angle) * player.SPEED;
+      }
+
+      player.move(UPDATE_MS / 1000.0);
+
       repaint();
     }
+  }
+
+  private double magnitude(double x, double y) {
+    return Math.sqrt(x * x + y * y);
   }
 
   public void paintComponent(Graphics g) {
