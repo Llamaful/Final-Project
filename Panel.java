@@ -15,7 +15,7 @@ public class Panel extends JPanel {
 
   Image playerImage = getImage("images/player.png");
   double playerX = 50, playerY = 50, playerVelocityX = 0, playerVelocityY = 0;
-  final double playerACCELERATION = 5000, playerMAXSPEED = 20000, FRICTION = 0.0001;
+  final double playerACCELERATION = 8000, playerMAXSPEED = 1000, FRICTION = 0.00001;
   
   Image weaponImage = getImage("images/pistol.png");
   
@@ -24,7 +24,7 @@ public class Panel extends JPanel {
   
   public Panel() {
     setBackground(BG_COLOR);
-    setPreferredSize(new Dimension(1000, 700));
+    setPreferredSize(new Dimension(1024, 768));
 
     Mouse mouse = new Mouse();
     addMouseListener(mouse);
