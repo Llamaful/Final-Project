@@ -1,23 +1,26 @@
-import Game.*;
-import Game.Weapons.*;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 // import java.awt.Graphics;
 // import javax.swing.JLabel; 
+import java.io.File;
+import java.io.IOException;
 
 public class Panel extends JPanel {
   public static final Color BG_COLOR = Color.decode("0x181819");
 
   final int UPDATE_MS = 50;
 
-  Player player = new Player();
-  Weapon weapon = new Pistol();
-
-  double dir_x = 0, dir_y = 0;
-
+  Image playerImage = getImage("images/player.png");
+  double playerX = 50, playerY = 50, playerVelocityX = 0, playerVelocityY = 0;
+  final double playerACCELERATION = 5000, playerMAXSPEED = 20000, FRICTION = 0.0001;
+  
+  Image weaponImage = getImage("images/pistol.png");
+  
   Point mouse;
+  double dir_x = 0, dir_y = 0;
   
   public Panel() {
     setBackground(BG_COLOR);
@@ -76,18 +79,25 @@ public class Panel extends JPanel {
 
   public class TimerListener implements ActionListener {
     public void actionPerformed(ActionEvent e) {
-      player.dx += dir_x * player.ACCELERATION * UPDATE_MS / 1000.0;
-      player.dy += dir_y * player.ACCELERATION * UPDATE_MS / 1000.0;
-      if (magnitude(player.dx, player.dy) > player.SPEED) {
+      playerVelocityX += dir_x * playerACCELERATION * UPDATE_MS / 1000.0;
+      playerVelocityY += dir_y * playerACCELERATION * UPDATE_MS / 1000.0;
+      if (magnitude(playerVelocityX, playerVelocityY) > playerMAXSPEED) {
         double angle = Math.atan2(dir_y, dir_x);
-        player.dx = Math.cos(angle) * player.SPEED;
-        player.dy = Math.sin(angle) * player.SPEED;
+        playerVelocityX = Math.cos(angle) * playerMAXSPEED;
+        playerVelocityY = Math.sin(angle) * playerMAXSPEED;
       }
 
-      player.move(UPDATE_MS / 1000.0);
+      movePlayer(UPDATE_MS / 1000.0);
 
       repaint();
     }
+  }
+
+  private void movePlayer(double dt) {
+    playerX += playerVelocityX * dt;
+    playerY += playerVelocityY * dt;
+    playerVelocityX *= Math.pow(FRICTION, dt);
+    playerVelocityY *= Math.pow(FRICTION, dt);
   }
 
   private double magnitude(double x, double y) {
@@ -97,13 +107,35 @@ public class Panel extends JPanel {
   public void paintComponent(Graphics g) {
     super.paintComponent(g);
 
-    Texture test = new Texture("llama_with_hay.jpeg", 100, 100);
-    test.draw(g, this, 50, 50);
+    g.drawImage(getImage("images/llama_with_hay.jpeg"), 50, 50, 64, 32, this);
 
-    player.draw(g);
+    g.drawImage(playerImage, (int)playerX-32, (int)playerY-16, 64, 64, this);
 
     if (mouse == null) return;
-    final double angle = Math.atan2(mouse.getY() - player.y, mouse.getX() - player.x);
-    weapon.draw((Graphics2D)g, this, (int)(player.x + Math.cos(angle) * player.size / 2), (int)(player.y + Math.sin(angle) * player.size / 2), angle);
+    drawWeapon((Graphics2D)g);
+  }
+
+  private void drawWeapon(Graphics2D g) {
+    final double angle = Math.atan2(mouse.getY() - playerY, mouse.getX() - playerX);
+    g.translate((int)(playerX + Math.cos(angle) * 32), (int)(playerY + Math.sin(angle) * 32));
+    g.rotate(angle);
+    if (angle > Math.PI/2 || angle < -Math.PI/2) {
+      g.scale(1, -1);
+    }
+    g.drawImage(weaponImage, 0, 0, 32, 32, this);
+  }
+
+  public Image getImage(String pathname) {
+    try {
+      return ImageIO.read(new File(pathname));
+    } catch (IOException e1) {
+      try {
+        return ImageIO.read(getClass().getResource(pathname));
+      } catch (IOException e2) {
+        e1.printStackTrace();
+        e2.printStackTrace();
+      }
+    }
+    return null;
   }
 }
