@@ -15,12 +15,12 @@ public class Panel extends JPanel {
 
   Image playerImage = getImage("images/player.png");
   double playerX = 50, playerY = 50, playerVelocityX = 0, playerVelocityY = 0;
-  final double playerACCELERATION = 8000, playerMAXSPEED = 1000, FRICTION = 0.00001;
+  final double playerACCELERATION = 8000, playerMAXSPEED = 500, FRICTION = 0.00001;
   
   Image weaponImage = getImage("images/pistol.png");
   
   Point mouse;
-  double dir_x = 0, dir_y = 0;
+  byte dir_up = 0, dir_down = 0, dir_left = 0, dir_right = 0;
   
   public Panel() {
     setBackground(BG_COLOR);
@@ -49,15 +49,17 @@ public class Panel extends JPanel {
     public void keyTyped(KeyEvent e) {}
     public void keyPressed(KeyEvent e) {
       int key = e.getKeyCode();
-      if (key == KeyEvent.VK_W || key == KeyEvent.VK_UP) dir_y = -1;
-      else if (key == KeyEvent.VK_S || key == KeyEvent.VK_DOWN) dir_y = 1;
-      if (key == KeyEvent.VK_A || key == KeyEvent.VK_LEFT) dir_x = -1;
-      else if (key == KeyEvent.VK_D || key == KeyEvent.VK_RIGHT) dir_x = 1;
+      if (key == KeyEvent.VK_W || key == KeyEvent.VK_UP) dir_up = 1;
+      else if (key == KeyEvent.VK_S || key == KeyEvent.VK_DOWN) dir_down = 1;
+      if (key == KeyEvent.VK_A || key == KeyEvent.VK_LEFT) dir_left = 1;
+      else if (key == KeyEvent.VK_D || key == KeyEvent.VK_RIGHT) dir_right = 1;
     }
     public void keyReleased(KeyEvent e) {
       int key = e.getKeyCode();
-      if (key == KeyEvent.VK_W || key == KeyEvent.VK_S || key == KeyEvent.VK_UP || key == KeyEvent.VK_DOWN) dir_y = 0;
-      if (key == KeyEvent.VK_A || key == KeyEvent.VK_D || key == KeyEvent.VK_LEFT || key == KeyEvent.VK_RIGHT) dir_x = 0;
+      if (key == KeyEvent.VK_W || key == KeyEvent.VK_UP) dir_up = 0;
+      else if (key == KeyEvent.VK_S || key == KeyEvent.VK_DOWN) dir_down = 0;
+      if (key == KeyEvent.VK_A || key == KeyEvent.VK_LEFT) dir_left = 0;
+      else if (key == KeyEvent.VK_D || key == KeyEvent.VK_RIGHT) dir_right = 0;
     }
   }
 
@@ -79,10 +81,10 @@ public class Panel extends JPanel {
 
   public class TimerListener implements ActionListener {
     public void actionPerformed(ActionEvent e) {
-      playerVelocityX += dir_x * playerACCELERATION * UPDATE_MS / 1000.0;
-      playerVelocityY += dir_y * playerACCELERATION * UPDATE_MS / 1000.0;
+      playerVelocityX += (dir_right - dir_left) * playerACCELERATION * UPDATE_MS / 1000.0;
+      playerVelocityY += (dir_down - dir_up) * playerACCELERATION * UPDATE_MS / 1000.0;
       if (magnitude(playerVelocityX, playerVelocityY) > playerMAXSPEED) {
-        double angle = Math.atan2(dir_y, dir_x);
+        double angle = Math.atan2((dir_down - dir_up), (dir_right - dir_left));
         playerVelocityX = Math.cos(angle) * playerMAXSPEED;
         playerVelocityY = Math.sin(angle) * playerMAXSPEED;
       }
@@ -104,10 +106,15 @@ public class Panel extends JPanel {
     return Math.sqrt(x * x + y * y);
   }
 
+  private Image bg = getImage("images/llama_with_hay.jpeg");
+
   public void paintComponent(Graphics g) {
     super.paintComponent(g);
 
-    g.drawImage(getImage("images/llama_with_hay.jpeg"), 50, 50, 64, 32, this);
+    // Draw background
+    g.drawImage(getImage("images/background1.jpg"), 0, 0, 1024, 768, this);
+
+    g.drawImage(bg, 50, 50, 64, 32, this);
 
     g.drawImage(playerImage, (int)playerX-32, (int)playerY-16, 64, 64, this);
 
