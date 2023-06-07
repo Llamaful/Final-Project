@@ -51,7 +51,7 @@ public class Panel extends JPanel {
   // dimentions: 1024 by 768
   private Screen[] screens = new Screen[] {
     new Screen(getImage("images/background1.jpg"), new Walls(new Rectangle(0, 0, 1024, 64), new Rectangle(0, 64, 64, 640), new Rectangle(0, 704, 320, 64), new Rectangle(448, 704, 576, 64), new Rectangle(960, 192, 64, 512)), -1, -1, -1, 1),
-    new Screen(getImage("images/background2.jpg"), new Walls(new Rectangle[0]), -1, -1, -1, -1)
+    new Screen(getImage("images/background2.jpg"), new Walls(new Rectangle[0]), -1, 0, -1, -1)
   };
   private int currentScreen = 0;
 
@@ -87,7 +87,9 @@ public class Panel extends JPanel {
   
   public Panel() {
     setBackground(BG_COLOR);
-    setPreferredSize(new Dimension(1024, 768));
+    // setPreferredSize();
+    setMaximumSize(new Dimension(1024, 768));
+    setSize(new Dimension(1024, 768));
 
     Mouse mouse = new Mouse();
     addMouseListener(mouse);
@@ -195,23 +197,25 @@ public class Panel extends JPanel {
 
   private void checkScreenExit() {
     if (playerY < -32) { /* Exit Top */
-      switchScreen(screens[currentScreen].exitTop);
+      if (switchScreen(screens[currentScreen].exitTop))
       playerY = 736;
     } else if (playerY > 800) { /* Exit Bottom */
-      switchScreen(screens[currentScreen].exitBottom);
+      if (switchScreen(screens[currentScreen].exitBottom))
       playerY = 32;
     } else if (playerX < -16) { /* Exit Left */
-      switchScreen(screens[currentScreen].exitLeft);
+      if (switchScreen(screens[currentScreen].exitLeft))
       playerX = 1008;
     } else if (playerX > 1040) { /* Exit Right */
-      switchScreen(screens[currentScreen].exitRight);
+      if (switchScreen(screens[currentScreen].exitRight))
       playerX = 16;
     }
   }
 
-  private void switchScreen(int screen) {
-    if (screen < 0 || screen >= screens.length) return;
+  private boolean switchScreen(int screen) {
+    if (screen < 0 || screen >= screens.length) return false;
     currentScreen = screen;
+    bullets.clear();
+    return true;
   }
 
   private void updatePlayerBounds() {
