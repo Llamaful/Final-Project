@@ -31,7 +31,6 @@ public class Panel extends JPanel {
     addMouseMotionListener(mouse);
 
     addKeyListener(new KeyPress());
-    System.out.println("HELLO");
 
     Timer timer = new Timer(UPDATE_MS, new TimerListener());
     timer.setRepeats(true);
@@ -106,15 +105,13 @@ public class Panel extends JPanel {
     return Math.sqrt(x * x + y * y);
   }
 
-  private Image bg = getImage("images/llama_with_hay.jpeg");
+  private Image bgImage = getImage("images/background1.jpg");
 
   public void paintComponent(Graphics g) {
     super.paintComponent(g);
 
     // Draw background
-    g.drawImage(getImage("images/background1.jpg"), 0, 0, 1024, 768, this);
-
-    g.drawImage(bg, 50, 50, 64, 32, this);
+    g.drawImage(bgImage, 0, 0, 1024, 768, this);
 
     g.drawImage(playerImage, (int)playerX-32, (int)playerY-16, 64, 64, this);
 
