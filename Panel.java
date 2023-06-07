@@ -44,6 +44,19 @@ public class Panel extends JPanel {
       return x < -4 || x > 1028 || y < -4 || y > 772 || screens[currentScreen].walls.isColliding(bounds);
     }
   }
+
+  class Enemy {
+    public Image image;
+    public double x, y, width, height, health, MAX_HEALTH;
+    public Enemy(Image image, double x, double y, double width, double height, double MAX_HEALTH) {
+      this.image = image; this.x = x; this.y = y; this.width = width; this.height = height;
+      this.MAX_HEALTH = MAX_HEALTH; health = MAX_HEALTH;
+    }
+    public void damage(double amount) {
+      health -= amount;
+      if (health < 0) health = 0;
+    }
+  }
   
   Point mouse;
   byte dir_up = 0, dir_down = 0, dir_left = 0, dir_right = 0;
