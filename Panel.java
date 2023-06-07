@@ -29,20 +29,42 @@ public class Panel extends JPanel {
     public Rectangle bounds = new Rectangle();
     public Bullet(int x, int y, double velocityX, double velocityY) {
       this.x = x; this.y = y; this.velocityX = velocityX; this.velocityY = velocityY;
-      bounds = new Rectangle(x, y, 4, 4);
+      bounds = new Rectangle(x, y, 8, 8);
     }
     public void move(double dt) {
       x += velocityX * dt;
       y += velocityY * dt;
+      updateBounds();
+    }
+    public void updateBounds() {
+      bounds.x = x;
+      bounds.y = y;
+    }
+    public boolean shouldBeRemoved() {
+      return x < -4 || x > 1028 || y < -4 || y > 772 || screens[currentScreen].walls.isColliding(bounds);
     }
   }
   
   Point mouse;
   byte dir_up = 0, dir_down = 0, dir_left = 0, dir_right = 0;
 
-  private Image bgImage = getImage("images/background1.jpg");
-  private Walls walls = new Walls(new Rectangle(0, 0, 1024, 64));
+  // dimentions: 1024 by 768
+  private Screen[] screens = new Screen[] {
+    new Screen(getImage("images/background1.jpg"), new Walls(new Rectangle(0, 0, 1024, 64), new Rectangle(0, 64, 64, 640), new Rectangle(0, 704, 320, 64), new Rectangle(448, 704, 576, 64), new Rectangle(960, 192, 64, 512)), -1, -1, -1, 1),
+    new Screen(getImage("images/background2.jpg"), new Walls(new Rectangle[0]), -1, -1, -1, -1)
+  };
+  private int currentScreen = 0;
 
+  class Screen {
+    public Image image;
+    public Walls walls;
+    public int exitTop, exitLeft, exitBottom, exitRight;
+    public Screen(Image image, Walls walls, int exitTop, int exitLeft, int exitBottom, int exitRight) {
+      this.image = image; this.walls = walls;
+      this.exitTop = exitTop; this.exitLeft = exitLeft; this.exitBottom = exitBottom; this.exitRight = exitRight;
+    }
+  }
+   
   class Walls {
     Rectangle[] walls;
     public Walls(Rectangle... walls) {
@@ -111,12 +133,6 @@ public class Panel extends JPanel {
       mouse = e.getPoint();
     }
     public void mouseClicked(MouseEvent e) {
-      System.out.println("Clicked!"); // emily
-      // timer.start()
-      
-      // create bullet (give x, y, and velocities)
-      // add to array list
-      // playerXDirection = (playerVelocityX) / Math.abs(playerVelocityX);
       double dirX = mouse.x - playerX;
       double dirY = mouse.y - playerY;
       final double magnitude = invSqrt(dirX * dirX + dirY * dirY);
@@ -151,12 +167,9 @@ public class Panel extends JPanel {
     }
 
     private void updateBullet() {
-      // emily add code
-      // for each Bullet b, call b.move(UPDATE_MS / 1000.0)
-      // check for wall collisions or out of bounds: delete
       for (int i = 0; i < bullets.size(); i++) {
         bullets.get(i).move(UPDATE_MS / 1000.0);
-        if (walls.isColliding(bullets.get(i).bounds)) {
+        if (bullets.get(i).shouldBeRemoved()) {
           bullets.remove(i);
           i--;
         }
@@ -175,7 +188,30 @@ public class Panel extends JPanel {
       movePlayer(UPDATE_MS / 1000.0);
 
       updatePlayerBounds();
+
+      checkScreenExit();
     }
+  }
+
+  private void checkScreenExit() {
+    if (playerY < -32) { /* Exit Top */
+      switchScreen(screens[currentScreen].exitTop);
+      playerY = 736;
+    } else if (playerY > 800) { /* Exit Bottom */
+      switchScreen(screens[currentScreen].exitBottom);
+      playerY = 32;
+    } else if (playerX < -16) { /* Exit Left */
+      switchScreen(screens[currentScreen].exitLeft);
+      playerX = 1008;
+    } else if (playerX > 1040) { /* Exit Right */
+      switchScreen(screens[currentScreen].exitRight);
+      playerX = 16;
+    }
+  }
+
+  private void switchScreen(int screen) {
+    if (screen < 0 || screen >= screens.length) return;
+    currentScreen = screen;
   }
 
   private void updatePlayerBounds() {
@@ -196,7 +232,7 @@ public class Panel extends JPanel {
     for (int i = 0; i <= Math.abs(dx)-1; i++) {
       playerX += dir;
       updatePlayerBounds();
-      if (walls.isPlayerColliding()) {
+      if (screens[currentScreen].walls.isPlayerColliding()) {
         playerX -= dir;
         return;
       }
@@ -205,7 +241,7 @@ public class Panel extends JPanel {
     dir = dx % 1;
     playerX += dir;
     updatePlayerBounds();
-    if (walls.isPlayerColliding()) {
+    if (screens[currentScreen].walls.isPlayerColliding()) {
       playerX -= dir;
       return;
     }
@@ -216,7 +252,7 @@ public class Panel extends JPanel {
     for (int i = 0; i <= Math.abs(dy)-1; i++) {
       playerY += dir;
       updatePlayerBounds();
-      if (walls.isPlayerColliding()) {
+      if (screens[currentScreen].walls.isPlayerColliding()) {
         playerY -= dir;
         return;
       }
@@ -225,7 +261,7 @@ public class Panel extends JPanel {
     dir = dy % 1;
     playerY += dir;
     updatePlayerBounds();
-    if (walls.isPlayerColliding()) {
+    if (screens[currentScreen].walls.isPlayerColliding()) {
       playerY -= dir;
       return;
     }
@@ -239,18 +275,15 @@ public class Panel extends JPanel {
     super.paintComponent(g);
 
     // Draw background
-    g.drawImage(bgImage, 0, 0, 1024, 768, this);
+    g.drawImage(screens[currentScreen].image, 0, 0, 1024, 768, this);
 
     // Draw player
     g.drawImage(playerImage, (int)playerX-32, (int)playerY-16, 64, 64, this);
 
-    g.setColor(Color.RED);
-    g.drawRect(playerBound.x, playerBound.y, playerBound.width, playerBound.height);
-
     // Draw bullets
     g.setColor(Color.RED);
     for (Bullet b : bullets) {
-      g.fillOval(b.x-2, b.y-2, 4, 4);
+      g.fillOval(b.x-4, b.y-4, 8, 8);
     }
 
     if (mouse == null) return;
