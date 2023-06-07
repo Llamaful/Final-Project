@@ -9,10 +9,10 @@ public class DisplayFrame extends JFrame {
     setSize(1024, 768);
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     getContentPane().setBackground(BG_COLOR);
-    getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
+    // getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
     getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
     setAlwaysOnTop(true);
   
-    setLayout(new BorderLayout());
+    add(new Panel());
   }
 }
