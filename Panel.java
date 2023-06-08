@@ -1,6 +1,8 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.ImageObserver;
+
 // import java.awt.Graphics;
 // import javax.swing.JLabel; 
 import javax.imageio.ImageIO;
@@ -22,6 +24,8 @@ public class Panel extends JPanel {
   Image weaponImage = getImage("images/pistol.png");
   ArrayList<Bullet> bullets = new ArrayList<Bullet>();
   final double bulletSpeed = 750;
+
+  ArrayList<Enemy> enemies = new ArrayList<Enemy>();
 
   class Bullet {
     public int x, y;
@@ -47,14 +51,26 @@ public class Panel extends JPanel {
 
   class Enemy {
     public Image image;
-    public double x, y, width, height, health, MAX_HEALTH;
-    public Enemy(Image image, double x, double y, double width, double height, double MAX_HEALTH) {
+    public double x, y, health, MAX_HEALTH, speed = 20;
+    public int width, height;
+    public Point target;
+    public Enemy(Image image, double x, double y, int width, int height, double MAX_HEALTH) {
       this.image = image; this.x = x; this.y = y; this.width = width; this.height = height;
       this.MAX_HEALTH = MAX_HEALTH; health = MAX_HEALTH;
     }
     public void damage(double amount) {
       health -= amount;
       if (health < 0) health = 0;
+    }
+    public void moveToTarget(double dt) {
+      x += clamp(target.x - x) * speed * dt;
+      y += clamp(target.y - y) * speed * dt;
+    }
+    public void draw(Graphics g, ImageObserver io) {
+      g.drawImage(image, (int)(x-width/2), (int)(y-width/2), width, height, io);
+    }
+    private double clamp(double value) {
+      return value > 1 ? 1 : (value < -1 ? -1 : value);
     }
   }
   
@@ -64,7 +80,7 @@ public class Panel extends JPanel {
   // dimentions: 1024 by 768
   private Screen[] screens = new Screen[] {
     new Screen(getImage("images/background1.jpg"), new Walls(new Rectangle(0, 0, 1024, 64), new Rectangle(0, 64, 64, 640), new Rectangle(0, 704, 320, 64), new Rectangle(448, 704, 576, 64), new Rectangle(960, 192, 64, 512)), -1, -1, -1, 1),
-    new Screen(getImage("images/background2.jpg"), new Walls(new Rectangle[0]), -1, 0, -1, -1)
+    new Screen(getImage("images/background2.jpg"), new Walls(new Rectangle[0]), 1, 0, 1, 1)
   };
   private int currentScreen = 0;
 
@@ -113,6 +129,9 @@ public class Panel extends JPanel {
     Timer timer = new Timer(UPDATE_MS, new TimerListener());
     timer.setRepeats(true);
     timer.start();
+
+    // NOTE: remove later
+    enemies.add(new Enemy(getImage("images/aadi.png"), 240, 240, 64, 64, 100));
 
     // initialize variables
     // start timer
@@ -165,7 +184,7 @@ public class Panel extends JPanel {
 
   /** Don't worry about it */
   public static double invSqrt(double x) {
-    double xhalf = 0.5d * x;
+    final double xhalf = 0.5d * x;
     long i = Double.doubleToLongBits(x);
     i = 0x5fe6ec85e7de30daL - (i >> 1);
     x = Double.longBitsToDouble(i);
@@ -296,6 +315,11 @@ public class Panel extends JPanel {
 
     // Draw player
     g.drawImage(playerImage, (int)playerX-32, (int)playerY-16, 64, 64, this);
+
+    // Draw enemies
+    for (Enemy e : enemies) {
+      e.draw(g, this);
+    }
 
     // Draw bullets
     g.setColor(Color.RED);
