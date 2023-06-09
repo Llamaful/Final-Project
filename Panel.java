@@ -1,7 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.ImageObserver;
 
 // import java.awt.Graphics;
 // import javax.swing.JLabel; 
@@ -9,17 +8,17 @@ import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class Panel extends JPanel {
   public static final Color BG_COLOR = Color.decode("0x181819");
 
   final int UPDATE_MS = 50;
 
+  final Random random = new Random();
+
   // player: 64px by 64px
-  Image playerImage = getImage("images/player.png");
-  double playerX = 128, playerY = 128, playerVelocityX = 0, playerVelocityY = 0;
-  final Rectangle playerBound = new Rectangle(96, 96, 32, 64);
-  final double playerACCELERATION = 8000, playerMAXSPEED = 500, FRICTION = 0.00001;
+  Player player = new Player(getImage("images/player.png"), 128, 128);
   
   Image weaponImage = getImage("images/pistol.png");
   ArrayList<Bullet> bullets = new ArrayList<Bullet>();
@@ -29,10 +28,11 @@ public class Panel extends JPanel {
 
   class Bullet {
     public int x, y;
-    public double velocityX, velocityY;
+    public double velocityX, velocityY, damage;
     public Rectangle bounds = new Rectangle();
-    public Bullet(int x, int y, double velocityX, double velocityY) {
+    public Bullet(int x, int y, double velocityX, double velocityY, double damage) {
       this.x = x; this.y = y; this.velocityX = velocityX; this.velocityY = velocityY;
+      this.damage = damage;
       bounds = new Rectangle(x, y, 8, 8);
     }
     public void move(double dt) {
@@ -45,32 +45,7 @@ public class Panel extends JPanel {
       bounds.y = y;
     }
     public boolean shouldBeRemoved() {
-      return x < -4 || x > 1028 || y < -4 || y > 772 || screens[currentScreen].walls.isColliding(bounds);
-    }
-  }
-
-  class Enemy {
-    public Image image;
-    public double x, y, health, MAX_HEALTH, speed = 20;
-    public int width, height;
-    public Point target;
-    public Enemy(Image image, double x, double y, int width, int height, double MAX_HEALTH) {
-      this.image = image; this.x = x; this.y = y; this.width = width; this.height = height;
-      this.MAX_HEALTH = MAX_HEALTH; health = MAX_HEALTH;
-    }
-    public void damage(double amount) {
-      health -= amount;
-      if (health < 0) health = 0;
-    }
-    public void moveToTarget(double dt) {
-      x += clamp(target.x - x) * speed * dt;
-      y += clamp(target.y - y) * speed * dt;
-    }
-    public void draw(Graphics g, ImageObserver io) {
-      g.drawImage(image, (int)(x-width/2), (int)(y-width/2), width, height, io);
-    }
-    private double clamp(double value) {
-      return value > 1 ? 1 : (value < -1 ? -1 : value);
+      return screens[currentScreen].walls.isColliding(bounds) || x < -4 || x > 1028 || y < -4 || y > 772;
     }
   }
   
@@ -101,7 +76,7 @@ public class Panel extends JPanel {
     }
     public boolean isPlayerColliding() {
       for (Rectangle r : walls) {
-        if (r.intersects(playerBound)) return true;
+        if (r.intersects(player.bound)) return true;
       }
       return false;
     }
@@ -131,7 +106,9 @@ public class Panel extends JPanel {
     timer.start();
 
     // NOTE: remove later
-    enemies.add(new Enemy(getImage("images/aadi.png"), 240, 240, 64, 64, 100));
+    for (int i = 0; i < 50; i++) {
+      enemies.add(new Enemy("images/enemy.png", "images/enemy_hit.png", 1064, 140, 64, 64, 20)); 
+    }
 
     // initialize variables
     // start timer
@@ -166,17 +143,17 @@ public class Panel extends JPanel {
     public void mouseMoved(MouseEvent e) {
       mouse = e.getPoint();
     }
-    public void mouseClicked(MouseEvent e) {
-      double dirX = mouse.x - playerX;
-      double dirY = mouse.y - playerY;
+    public void mousePressed(MouseEvent e) {
+      double dirX = mouse.x - player.x;
+      double dirY = mouse.y - player.y;
       final double magnitude = invSqrt(dirX * dirX + dirY * dirY);
       dirX *= magnitude; dirY *= magnitude;
 
-      Bullet b = new Bullet((int) playerX, (int) playerY, bulletSpeed * dirX, bulletSpeed * dirY);
+      Bullet b = new Bullet((int) player.x, (int) player.y, bulletSpeed * dirX, bulletSpeed * dirY, player.weapon.damage);
       bullets.add(b);
       
     }
-    public void mousePressed(MouseEvent e) {}
+    public void mouseClicked(MouseEvent e) {}
     public void mouseReleased(MouseEvent e) {}
     public void mouseEntered(MouseEvent e) {}
     public void mouseExited(MouseEvent e) {}
@@ -196,6 +173,7 @@ public class Panel extends JPanel {
     public void actionPerformed(ActionEvent e) {
       updatePlayer();
       updateBullet();
+      updateEnemies();
 
       repaint();
     }
@@ -204,19 +182,18 @@ public class Panel extends JPanel {
       for (int i = 0; i < bullets.size(); i++) {
         bullets.get(i).move(UPDATE_MS / 1000.0);
         if (bullets.get(i).shouldBeRemoved()) {
-          bullets.remove(i);
-          i--;
+          bullets.remove(i--);
         }
       }
     }
 
     private void updatePlayer() {
-      playerVelocityX += (dir_right - dir_left) * playerACCELERATION * UPDATE_MS / 1000.0;
-      playerVelocityY += (dir_down - dir_up) * playerACCELERATION * UPDATE_MS / 1000.0;
-      if (magnitude(playerVelocityX, playerVelocityY) > playerMAXSPEED) {
+      player.velocityX += (dir_right - dir_left) * player.ACCELERATION * UPDATE_MS / 1000.0;
+      player.velocityY += (dir_down - dir_up) * player.ACCELERATION * UPDATE_MS / 1000.0;
+      if (magnitude(player.velocityX, player.velocityY) > player.MAXSPEED) {
         double angle = Math.atan2((dir_down - dir_up), (dir_right - dir_left));
-        playerVelocityX = Math.cos(angle) * playerMAXSPEED;
-        playerVelocityY = Math.sin(angle) * playerMAXSPEED;
+        player.velocityX = Math.cos(angle) * player.MAXSPEED;
+        player.velocityY = Math.sin(angle) * player.MAXSPEED;
       }
 
       movePlayer(UPDATE_MS / 1000.0);
@@ -225,21 +202,43 @@ public class Panel extends JPanel {
 
       checkScreenExit();
     }
+
+    private void updateEnemies() {
+      for (int e = 0; e < enemies.size(); e++) {
+        enemies.get(e).moveToTarget(UPDATE_MS / 1000.0);
+
+        // change target
+        if (Math.random() < 0.5 * (UPDATE_MS / 1000.0)) {
+          enemies.get(e).target = new Point(random.nextInt(64, 960), random.nextInt(64, 704));
+        }
+
+        // bullet collisions
+        for (int i = 0; i < bullets.size(); i++) {
+          if (bullets.get(i).bounds.intersects(enemies.get(e).bounds)) {
+            enemies.get(e).damage(bullets.get(i).damage);
+            enemies.get(e).hit = true;
+            if (enemies.get(e).health <= 0) enemies.remove(e--);
+            bullets.remove(i--);
+            break;
+          }
+        }
+      }
+    }
   }
 
   private void checkScreenExit() {
-    if (playerY < -32) { /* Exit Top */
+    if (player.y < -32) { /* Exit Top */
       if (switchScreen(screens[currentScreen].exitTop))
-      playerY = 736;
-    } else if (playerY > 800) { /* Exit Bottom */
+      player.y = 736;
+    } else if (player.y > 800) { /* Exit Bottom */
       if (switchScreen(screens[currentScreen].exitBottom))
-      playerY = 32;
-    } else if (playerX < -16) { /* Exit Left */
+      player.y = 32;
+    } else if (player.x < -16) { /* Exit Left */
       if (switchScreen(screens[currentScreen].exitLeft))
-      playerX = 1008;
-    } else if (playerX > 1040) { /* Exit Right */
+      player.x = 1008;
+    } else if (player.x > 1040) { /* Exit Right */
       if (switchScreen(screens[currentScreen].exitRight))
-      playerX = 16;
+      player.x = 16;
     }
   }
 
@@ -252,33 +251,33 @@ public class Panel extends JPanel {
 
   private void updatePlayerBounds() {
     // update bounding box
-    playerBound.x = (int)playerX - 16;
-    playerBound.y = (int)playerY - 16;
+    player.bound.x = (int)player.x - 16;
+    player.bound.y = (int)player.y - 16;
   }
 
   private void movePlayer(double dt) {
-    movePlayerStepX(playerVelocityX * dt);
-    movePlayerStepY(playerVelocityY * dt);
-    playerVelocityX *= Math.pow(FRICTION, dt);
-    playerVelocityY *= Math.pow(FRICTION, dt);
+    movePlayerStepX(player.velocityX * dt);
+    movePlayerStepY(player.velocityY * dt);
+    player.velocityX *= Math.pow(player.FRICTION, dt);
+    player.velocityY *= Math.pow(player.FRICTION, dt);
   }
 
   private void movePlayerStepX(double dx) {
     double dir = dx < 0 ? -1 : 1;
     for (int i = 0; i <= Math.abs(dx)-1; i++) {
-      playerX += dir;
+      player.x += dir;
       updatePlayerBounds();
       if (screens[currentScreen].walls.isPlayerColliding()) {
-        playerX -= dir;
+        player.x -= dir;
         return;
       }
     }
     // sorry :(
     dir = dx % 1;
-    playerX += dir;
+    player.x += dir;
     updatePlayerBounds();
     if (screens[currentScreen].walls.isPlayerColliding()) {
-      playerX -= dir;
+      player.x -= dir;
       return;
     }
   }
@@ -286,19 +285,19 @@ public class Panel extends JPanel {
   private void movePlayerStepY(double dy) {
     double dir = dy < 0 ? -1 : 1;
     for (int i = 0; i <= Math.abs(dy)-1; i++) {
-      playerY += dir;
+      player.y += dir;
       updatePlayerBounds();
       if (screens[currentScreen].walls.isPlayerColliding()) {
-        playerY -= dir;
+        player.y -= dir;
         return;
       }
     }
     // sorry :(
     dir = dy % 1;
-    playerY += dir;
+    player.y += dir;
     updatePlayerBounds();
     if (screens[currentScreen].walls.isPlayerColliding()) {
-      playerY -= dir;
+      player.y -= dir;
       return;
     }
   }
@@ -313,12 +312,11 @@ public class Panel extends JPanel {
     // Draw background
     g.drawImage(screens[currentScreen].image, 0, 0, 1024, 768, this);
 
-    // Draw player
-    g.drawImage(playerImage, (int)playerX-32, (int)playerY-16, 64, 64, this);
-
-    // Draw enemies
-    for (Enemy e : enemies) {
-      e.draw(g, this);
+    ArrayList<Sprite> sprites = new ArrayList<Sprite>(enemies);
+    sprites.add(player);
+    sprites.sort((a, b) -> (int)(a.getY() - b.getY()));
+    for (Sprite s : sprites) {
+      s.draw(s.getClass() == Player.class ? mouse : player.getPoint(), g, this);
     }
 
     // Draw bullets
@@ -326,27 +324,14 @@ public class Panel extends JPanel {
     for (Bullet b : bullets) {
       g.fillOval(b.x-4, b.y-4, 8, 8);
     }
-
-    if (mouse == null) return;
-    drawWeapon((Graphics2D)g);
   }
 
-  private void drawWeapon(Graphics2D g) {
-    final double angle = Math.atan2(mouse.getY() - playerY, mouse.getX() - playerX);
-    g.translate((int)(playerX + Math.cos(angle) * 32), (int)(playerY + Math.sin(angle) * 32));
-    g.rotate(angle);
-    if (angle > Math.PI/2 || angle < -Math.PI/2) {
-      g.scale(1, -1);
-    }
-    g.drawImage(weaponImage, 0, 0, 32, 32, this);
-  }
-
-  public Image getImage(String pathname) {
+  static public Image getImage(String pathname) {
     try {
       return ImageIO.read(new File(pathname));
     } catch (IOException e1) {
       try {
-        return ImageIO.read(getClass().getResource(pathname));
+        return ImageIO.read(Panel.class.getResource(pathname));
       } catch (IOException e2) {
         e1.printStackTrace();
         e2.printStackTrace();
