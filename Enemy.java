@@ -9,7 +9,7 @@ import java.awt.image.ImageObserver;
 public class Enemy implements Sprite {
   public Image image;
   public Weapon weapon;
-  public double x, y, health, MAX_HEALTH, speed = 200;
+  public double x, y, health, MAX_HEALTH, speed = 200, firePercentage;
   public int width, height;
   public Rectangle bounds;
   public Point target;
@@ -17,12 +17,12 @@ public class Enemy implements Sprite {
   public Image hitImage;
   public boolean hit = false;
 
-  public Enemy(String pathname, String hitPathname, double x, double y, int width, int height, double MAX_HEALTH) {
+  public Enemy(String pathname, String hitPathname, double x, double y, int width, int height, double MAX_HEALTH, double firePercentage) {
     this.image = Panel.getImage(pathname); this.x = x; this.y = y; this.width = width; this.height = height;
-    this.MAX_HEALTH = MAX_HEALTH; health = MAX_HEALTH;
+    this.MAX_HEALTH = MAX_HEALTH; health = MAX_HEALTH; this.firePercentage = firePercentage;
     bounds = new Rectangle((int)x - width/2, (int)y - height/2, width, height);
     target = new Point((int)x, (int)y);
-    weapon = Weapon.newPistol();
+    weapon = Weapon.newPistol(); weapon.speed /= 2;
     hit = false;
     hitImage = Panel.getImage(hitPathname);
   }
@@ -54,8 +54,8 @@ public class Enemy implements Sprite {
   }
 
   public void updateBounds() {
-    bounds.x = (int)x;
-    bounds.y = (int)y;
+    bounds.x = (int)x - width/2;
+    bounds.y = (int)y - height/2;
   }
   
   public void draw(Point pointTo, Graphics g, ImageObserver io) {

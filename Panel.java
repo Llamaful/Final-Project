@@ -20,19 +20,20 @@ public class Panel extends JPanel {
   // player: 64px by 64px
   Player player = new Player(getImage("images/player.png"), 128, 128);
   
-  Image weaponImage = getImage("images/pistol.png");
   ArrayList<Bullet> bullets = new ArrayList<Bullet>();
-  final double bulletSpeed = 750;
 
   ArrayList<Enemy> enemies = new ArrayList<Enemy>();
 
   class Bullet {
     public int x, y;
+    public Color color;
     public double velocityX, velocityY, damage;
+    public boolean sourcePlayer; // true = from player | false = from enemy
     public Rectangle bounds = new Rectangle();
-    public Bullet(int x, int y, double velocityX, double velocityY, double damage) {
+    public Bullet(Color color, int x, int y, double velocityX, double velocityY, double damage, boolean sourcePlayer) {
+      this.color = color;
       this.x = x; this.y = y; this.velocityX = velocityX; this.velocityY = velocityY;
-      this.damage = damage;
+      this.damage = damage; this.sourcePlayer = sourcePlayer;
       bounds = new Rectangle(x, y, 8, 8);
     }
     public void move(double dt) {
@@ -106,8 +107,8 @@ public class Panel extends JPanel {
     timer.start();
 
     // NOTE: remove later
-    for (int i = 0; i < 50; i++) {
-      enemies.add(new Enemy("images/enemy.png", "images/enemy_hit.png", 1064, 140, 64, 64, 20)); 
+    for (int i = 0; i < 10; i++) {
+      enemies.add(new Enemy("images/enemy.png", "images/enemy_hit.png", 1064, 140, 64, 64, 20, 0.6)); 
     }
 
     // initialize variables
@@ -149,7 +150,7 @@ public class Panel extends JPanel {
       final double magnitude = invSqrt(dirX * dirX + dirY * dirY);
       dirX *= magnitude; dirY *= magnitude;
 
-      Bullet b = new Bullet((int) player.x, (int) player.y, bulletSpeed * dirX, bulletSpeed * dirY, player.weapon.damage);
+      Bullet b = new Bullet(player.weapon.bulletColor, (int) player.x, (int) player.y, player.weapon.speed * dirX, player.weapon.speed * dirY, player.weapon.damage, true);
       bullets.add(b);
       
     }
@@ -205,15 +206,26 @@ public class Panel extends JPanel {
 
     private void updateEnemies() {
       for (int e = 0; e < enemies.size(); e++) {
-        enemies.get(e).moveToTarget(UPDATE_MS / 1000.0);
+        final Enemy en = enemies.get(e);
+        en.moveToTarget(UPDATE_MS / 1000.0);
 
         // change target
-        if (Math.random() < 0.5 * (UPDATE_MS / 1000.0)) {
-          enemies.get(e).target = new Point(random.nextInt(64, 960), random.nextInt(64, 704));
+        if (random.nextDouble() < 0.5 * (UPDATE_MS / 1000.0)) {
+          en.target = new Point(random.nextInt(64, 960), random.nextInt(64, 704));
+        }
+
+        // fire bullet
+        if (random.nextDouble() < en.firePercentage * (UPDATE_MS / 1000.0)) {
+          double dirX = player.x - en.x;
+          double dirY = player.y - en.y;
+          final double magnitude = invSqrt(dirX * dirX + dirY * dirY);
+          dirX *= magnitude; dirY *= magnitude;
+          bullets.add(new Bullet(en.weapon.bulletColor, (int)en.x, (int)en.y, en.weapon.speed * dirX, en.weapon.speed * dirY, en.weapon.damage, false));
         }
 
         // bullet collisions
         for (int i = 0; i < bullets.size(); i++) {
+          if (!bullets.get(i).sourcePlayer) continue;
           if (bullets.get(i).bounds.intersects(enemies.get(e).bounds)) {
             enemies.get(e).damage(bullets.get(i).damage);
             enemies.get(e).hit = true;
@@ -320,8 +332,8 @@ public class Panel extends JPanel {
     }
 
     // Draw bullets
-    g.setColor(Color.RED);
     for (Bullet b : bullets) {
+      g.setColor(b.color);
       g.fillOval(b.x-4, b.y-4, 8, 8);
     }
   }

@@ -1,3 +1,4 @@
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -15,7 +16,7 @@ public class Player implements Sprite {
   public Player(Image image, double x, double y) {
     this.image = image; this.x = x; this.y = y;
     velocityX = 0; velocityY = 0;
-    weapon = Weapon.newPistol();
+    weapon = Weapon.newPistol(); weapon.bulletColor = Color.ORANGE;
   }
 
   public void draw(Point mouse, Graphics g, ImageObserver io) {

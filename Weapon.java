@@ -1,24 +1,26 @@
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.image.ImageObserver;
 
 public class Weapon {
-  public static Weapon newPistol() { return new Weapon("Pistol", 10, "images/pistol.png"); }
+  public static Weapon newPistol() { return new Weapon("Pistol", Color.RED, 10, 750, "images/pistol.png"); }
 
   // -------
 
   public String name;
-  public double damage;
+  public double damage, speed;
+  public Color bulletColor;
   public Image image;
 
-  public Weapon(String name, double damage, String pathname) {
-    this.name = name; this.damage = damage;
+  public Weapon(String name, Color bulletColor, double damage, double speed, String pathname) {
+    this.name = name; this.bulletColor = bulletColor; this.damage = damage; this.speed = speed;
     image = Panel.getImage(pathname);
   }
 
-  public Weapon(String name, double damage, Image image) {
-    this.name = name; this.damage = damage;
+  public Weapon(String name, double damage, double speed, Image image) {
+    this.name = name; this.damage = damage; this.speed = speed;
     this.image = image;
   }
 
