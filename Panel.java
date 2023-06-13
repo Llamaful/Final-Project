@@ -18,7 +18,7 @@ public class Panel extends JPanel {
   final Random random = new Random();
 
   // player: 64px by 64px
-  Player player = new Player(getImage("images/player.png"), 128, 128);
+  Player player = new Player(getImage("images/player.png"), 128, 128, 100);
   
   ArrayList<Bullet> bullets = new ArrayList<Bullet>();
 
@@ -46,7 +46,7 @@ public class Panel extends JPanel {
       bounds.y = y;
     }
     public boolean shouldBeRemoved() {
-      return screens[currentScreen].walls.isColliding(bounds) || x < -4 || x > 1028 || y < -4 || y > 772;
+      return screens[currentScreen].walls.isCollidingWall(bounds) || x < -4 || x > 1028 || y < -4 || y > 772;
     }
   }
   
@@ -55,40 +55,98 @@ public class Panel extends JPanel {
 
   // dimentions: 1024 by 768
   private Screen[] screens = new Screen[] {
-    new Screen(getImage("images/background1.jpg"), new Walls(new Rectangle(0, 0, 1024, 64), new Rectangle(0, 64, 64, 640), new Rectangle(0, 704, 320, 64), new Rectangle(448, 704, 576, 64), new Rectangle(960, 192, 64, 512)), -1, -1, -1, 1),
-    new Screen(getImage("images/background2.jpg"), new Walls(new Rectangle[0]), 1, 0, 1, 1)
+    new Screen(getImage("images/background1.jpg"), new Walls(new Rect(0, 0, 1024, 64), new Rect(0, 64, 64, 640), new Rect(0, 704, 320, 64), new Rect(448, 704, 576, 64), new Rect(960, 192, 64, 512)), -1, -1, -1, 1),
+    new Screen(getImage("images/background2.jpg"), new Walls(new Rect(0, 0, 1024, 64), new Rect(960, 64, 64, 640), new Rect(0, 192, 64, 512), new Rect(0, 704, 320, 64), new Rect(448, 704, 576, 64), new Rect(160, 512, 64, 64), new Rect(592, 192, 262, 382)), -1, 0, 3, -1),
+    new Screen(null, null, -1, -1, -1, -1),
+    new Screen(getImage("images/background4.jpg"), new Walls(new Rect(0, 0, 320, 64), new Rect(448, 0, 576, 64), new Rect(0, 704, 1024, 64), new Rect(960, 64, 64, 640), new Rect(0, 192, 64, 512), new Rect(224, 64, 96, 256, false), new Rect(448, 64, 96, 640, false)), 1, -1, -1, -1)
   };
   private int currentScreen = 0;
 
   class Screen {
+    private static int screenCount = 0;
+
     public Image image;
     public Walls walls;
-    public int exitTop, exitLeft, exitBottom, exitRight;
+    public ArrayList<Enemy> enemies;
+    public int exitTop, exitLeft, exitBottom, exitRight, screenNumber;
     public Screen(Image image, Walls walls, int exitTop, int exitLeft, int exitBottom, int exitRight) {
       this.image = image; this.walls = walls;
       this.exitTop = exitTop; this.exitLeft = exitLeft; this.exitBottom = exitBottom; this.exitRight = exitRight;
+      screenNumber = screenCount++;
+
+      enemies = new ArrayList<Enemy>();
+      addEnemies();
+    }
+    private void addEnemies() {
+      if (walls == null) return;
+      if (screenNumber == 3) {
+        for (int i = 0; i < 12; i++) {
+          enemies.add(createDefaultEnemy(i % 2 == 0 ? 820 : 720, 108 + i * 48));
+        }
+        return;
+      }
+      for (int i = 0; i < 10; i++) {
+        Point p = getRandomPointWithin();
+        enemies.add(createDefaultEnemy(p.x, p.y));
+      }
+      if (screenNumber == 1) {
+        enemies.add(createRifleEnemy(530, 640));
+        enemies.add(createRifleEnemy(725, 135));
+      }
+    }
+    private Point getRandomPointWithin() {
+      Point p = new Point(random.nextInt(128*3, 928), random.nextInt(128, 672));
+      Rectangle r = new Rectangle(p.x-32, p.y-32, 64, 64);
+      while (walls.isColliding(r)) {
+        p = new Point(random.nextInt(128*3, 928), random.nextInt(128, 672));
+        r.x = p.x-32; r.y = p.y-32;
+      }
+      return p;
+    }
+    private Enemy createDefaultEnemy(int x, int y) {
+      return new Enemy("images/enemy.png", "images/enemy_hit.png", x, y, 64, 64, 20, 0.75);
+    }
+    private Enemy createRifleEnemy(int x, int y) {
+      Enemy bigGuy = new Enemy("images/enemy2.png", "images/enemy2_hit.png", x, y, 64, 64, 80, 0.7);
+      bigGuy.weapon = Weapon.newRifle();
+      bigGuy.weapon.speed /= 2;
+      return bigGuy;
     }
   }
    
   class Walls {
-    Rectangle[] walls;
-    public Walls(Rectangle... walls) {
+    Rect[] walls;
+    public Walls(Rect... walls) {
       this.walls = walls;
     }
     public boolean isPlayerColliding() {
-      for (Rectangle r : walls) {
+      for (Rect r : walls) {
         if (r.intersects(player.bound)) return true;
       }
       return false;
     }
-
     public boolean isColliding(Rectangle r) {
-      for (Rectangle o : walls) {
+      for (Rect o : walls) {
         if (o.intersects(r)) return true;
       }
       return false;
     }
+    public boolean isCollidingWall(Rectangle r) {
+      for (Rect o : walls) {
+        if (!o.isWall) continue;
+        if (o.intersects(r)) return true;
+      }
+      return false;
+    }
+    public boolean isColliding(int x, int y) {
+      for (Rect r : walls) {
+        if (r.contains(x, y)) return true;
+      }
+      return false;
+    }
   }
+
+  Timer timer;
   
   public Panel() {
     setBackground(BG_COLOR);
@@ -102,14 +160,11 @@ public class Panel extends JPanel {
 
     addKeyListener(new KeyPress());
 
-    Timer timer = new Timer(UPDATE_MS, new TimerListener());
+    timer = new Timer(UPDATE_MS, new TimerListener());
     timer.setRepeats(true);
     timer.start();
 
-    // NOTE: remove later
-    for (int i = 0; i < 10; i++) {
-      enemies.add(new Enemy("images/enemy.png", "images/enemy_hit.png", 1064, 140, 64, 64, 20, 0.6)); 
-    }
+    enemies = screens[currentScreen].enemies;
 
     // initialize variables
     // start timer
@@ -173,6 +228,7 @@ public class Panel extends JPanel {
   public class TimerListener implements ActionListener {
     public void actionPerformed(ActionEvent e) {
       updatePlayer();
+      if (player.health <= 0) return;
       updateBullet();
       updateEnemies();
 
@@ -198,8 +254,20 @@ public class Panel extends JPanel {
       }
 
       movePlayer(UPDATE_MS / 1000.0);
-
       updatePlayerBounds();
+
+      for (int i = 0; i < bullets.size(); i++) {
+        if (bullets.get(i).sourcePlayer) continue;
+        if (bullets.get(i).bounds.intersects(player.bound)) {
+          player.damage(bullets.get(i).damage);
+          bullets.remove(i--);
+          if (player.health <= 0) {
+            timer.stop();
+            repaint();
+            return;
+          }
+        }
+      }
 
       checkScreenExit();
     }
@@ -207,11 +275,11 @@ public class Panel extends JPanel {
     private void updateEnemies() {
       for (int e = 0; e < enemies.size(); e++) {
         final Enemy en = enemies.get(e);
-        en.moveToTarget(UPDATE_MS / 1000.0);
+        en.moveToTarget(screens[currentScreen].walls, UPDATE_MS / 1000.0);
 
         // change target
         if (random.nextDouble() < 0.5 * (UPDATE_MS / 1000.0)) {
-          en.target = new Point(random.nextInt(64, 960), random.nextInt(64, 704));
+          en.target = new Point(random.nextInt(currentScreen == 3 ? 575 : 64, 960), random.nextInt(64, 704));
         }
 
         // fire bullet
@@ -229,9 +297,11 @@ public class Panel extends JPanel {
           if (bullets.get(i).bounds.intersects(enemies.get(e).bounds)) {
             enemies.get(e).damage(bullets.get(i).damage);
             enemies.get(e).hit = true;
-            if (enemies.get(e).health <= 0) enemies.remove(e--);
             bullets.remove(i--);
-            break;
+            if (enemies.get(e).health <= 0) {
+              enemies.remove(e--);
+              break;
+            }
           }
         }
       }
@@ -252,13 +322,43 @@ public class Panel extends JPanel {
       if (switchScreen(screens[currentScreen].exitRight))
       player.x = 16;
     }
+    fixPlayer();
   }
 
   private boolean switchScreen(int screen) {
     if (screen < 0 || screen >= screens.length) return false;
+    screens[currentScreen].enemies = enemies;
     currentScreen = screen;
+    enemies = screens[currentScreen].enemies;
     bullets.clear();
     return true;
+  }
+
+  private void fixPlayer() {
+    final Walls w = screens[currentScreen].walls;
+    if (!w.isPlayerColliding()) return;
+    // sorry for janky code a little bit
+    if (!w.isColliding((int)player.x, (int)player.y-32)) { /* UP! */
+      while (w.isPlayerColliding()) {
+        player.y--;
+        updatePlayerBounds();
+      }
+    } else if (!w.isColliding((int)player.x, (int)player.y+32)) {
+      while (w.isPlayerColliding()) {
+        player.y++;
+        updatePlayerBounds();
+      }
+    } else if (!w.isColliding((int)player.x-16, (int)player.y)) {
+      while (w.isPlayerColliding()) {
+        player.x--;
+        updatePlayerBounds();
+      }
+    } else if (!w.isColliding((int)player.x+16, (int)player.y)) {
+      while (w.isPlayerColliding()) {
+        player.x++;
+        updatePlayerBounds();
+      }
+    }
   }
 
   private void updatePlayerBounds() {
@@ -333,9 +433,44 @@ public class Panel extends JPanel {
 
     // Draw bullets
     for (Bullet b : bullets) {
+      g.setColor(new Color(0, 0, 0, 64));
+      g.fillOval(b.x-2, b.y-2, 12, 12);
       g.setColor(b.color);
       g.fillOval(b.x-4, b.y-4, 8, 8);
     }
+
+    drawHealthBar(g);
+
+    // DEBUG! View bounding boxes of walls:
+    // for (Rect r : screens[currentScreen].walls.walls) {
+    //   g.setColor(r.isWall ? Color.YELLOW : Color.RED);
+    //   g.drawRect(r.x, r.y, r.width, r.height);
+    // }
+
+    if (player.health <= 0) {
+      g.setColor(new Color(0, 0, 0, 128));
+      g.fillRect(0, 0, getWidth(), getHeight());
+      g.setColor(Color.WHITE);
+      // Font big = getFont().deriveFont(Font.BOLD, 128f);
+      try {
+        GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(Font.createFont(Font.TRUETYPE_FONT, new File("Mokoto Glitch Mark.ttf")));
+      } catch (IOException|FontFormatException e) {
+        e.printStackTrace();
+      }
+      Font big = new Font("mokoto glitch mark I", Font.BOLD, 128);
+      g.setFont(big);
+      final String loseText = "You died!";
+      final int textWidth = g.getFontMetrics().stringWidth(loseText);
+      g.drawString(loseText, getWidth()/2 - textWidth/2, getHeight()/2);
+    }
+  }
+
+  private void drawHealthBar(Graphics g) {
+    g.setColor(Color.BLACK);
+    g.fillRect(708, 720, 300, 32);
+    g.setColor(Color.RED);
+    final int width = (int)(292 * (player.health / player.MAX_HEALTH));
+    g.fillRect(712, 724, width, 24);
   }
 
   static public Image getImage(String pathname) {

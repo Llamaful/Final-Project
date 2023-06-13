@@ -41,16 +41,59 @@ public class Enemy implements Sprite {
     return Math.abs(b - a) < 0.0001;
   }
 
-  public void moveToTarget(double dt) {
+  public void moveToTarget(Panel.Walls walls, double dt) {
     if (target == null) return;
 
-    if (Math.abs(target.x - x) <= speed * dt) x = target.x;
-    else x += Math.signum(target.x - x) * speed * dt;
-    
-    if (Math.abs(target.y - y) <= speed * dt) y = target.y;
-    else y += Math.signum(target.y - y) * speed * dt;
+    stepEnemyX(walls, clamp(target.x - x, 1) * speed * dt);
+    stepEnemyY(walls, clamp(target.y - y, 1) * speed * dt);
 
     updateBounds();
+  }
+
+  private void stepEnemyX(Panel.Walls walls, double dx) {
+    double dir = dx < 0 ? -1 : 1;
+    for (int i = 0; i <= Math.abs(dx)-1; i++) {
+      x += dir;
+      updateBounds();
+      if (walls.isColliding(bounds)) {
+        x -= dir;
+        return;
+      }
+    }
+    // sorry :(
+    dir = dx % 1;
+    x += dir;
+    updateBounds();
+    if (walls.isColliding(bounds)) {
+      x -= dir;
+      updateBounds();
+      return;
+    }
+  }
+
+  private void stepEnemyY(Panel.Walls walls, double dy) {
+    double dir = dy < 0 ? -1 : 1;
+    for (int i = 0; i <= Math.abs(dy)-1; i++) {
+      y += dir;
+      updateBounds();
+      if (walls.isColliding(bounds)) {
+        y -= dir;
+        return;
+      }
+    }
+    // sorry :(
+    dir = dy % 1;
+    y += dir;
+    updateBounds();
+    if (walls.isColliding(bounds)) {
+      y -= dir;
+      updateBounds();
+      return;
+    }
+  }
+
+  private double clamp(double value, double max) {
+    return value > max ? max : (value < -max ? -max : value);
   }
 
   public void updateBounds() {

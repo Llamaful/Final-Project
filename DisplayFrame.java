@@ -11,6 +11,7 @@ public class DisplayFrame extends JFrame {
     getContentPane().setBackground(BG_COLOR.darker());
     // getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
     getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
+    // setAlwaysOnTop(true);
 
     add(new Panel());
   }
