@@ -55,10 +55,10 @@ public class Panel extends JPanel {
 
   // dimentions: 1024 by 768
   private Screen[] screens = new Screen[] {
-    new Screen(getImage("images/background1.jpg"), new Walls(new Rect(0, 0, 1024, 64), new Rect(0, 64, 64, 640), new Rect(0, 704, 320, 64), new Rect(448, 704, 576, 64), new Rect(960, 192, 64, 512)), -1, -1, -1, 1),
+    new Screen(getImage("images/background1.jpg"), new Walls(new Rect(0, 0, 1024, 64), new Rect(0, 64, 64, 640), new Rect(0, 704, 320, 64), new Rect(448, 704, 576, 64), new Rect(960, 192, 64, 512)), -1, -1, 2, 1),
     new Screen(getImage("images/background2.jpg"), new Walls(new Rect(0, 0, 1024, 64), new Rect(960, 64, 64, 640), new Rect(0, 192, 64, 512), new Rect(0, 704, 320, 64), new Rect(448, 704, 576, 64), new Rect(160, 512, 64, 64), new Rect(592, 192, 262, 382)), -1, 0, 3, -1),
-    new Screen(null, null, -1, -1, -1, -1),
-    new Screen(getImage("images/background4.jpg"), new Walls(new Rect(0, 0, 320, 64), new Rect(448, 0, 576, 64), new Rect(0, 704, 1024, 64), new Rect(960, 64, 64, 640), new Rect(0, 192, 64, 512), new Rect(224, 64, 96, 256, false), new Rect(448, 64, 96, 640, false)), 1, -1, -1, -1)
+    new Screen(null, null, 0, -1, -1, 3),
+    new Screen(getImage("images/background4.jpg"), new Walls(new Rect(0, 0, 320, 64), new Rect(448, 0, 576, 64), new Rect(0, 704, 1024, 64), new Rect(960, 64, 64, 640), new Rect(0, 192, 64, 512), new Rect(224, 64, 96, 256, false), new Rect(448, 64, 96, 640, false)), 1, 2, -1, -1)
   };
   private int currentScreen = 0;
 
@@ -81,7 +81,8 @@ public class Panel extends JPanel {
       if (walls == null) return;
       if (screenNumber == 3) {
         for (int i = 0; i < 12; i++) {
-          enemies.add(createDefaultEnemy(i % 2 == 0 ? 820 : 720, 108 + i * 48));
+          final int x = i % 2 == 0 ? 820 : 720, y = 108 + i * 48;
+          enemies.add(random.nextDouble() < 0.2 ? createRifleEnemy(x, y) : createDefaultEnemy(x, y));
         }
         return;
       }

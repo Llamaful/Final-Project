@@ -6,7 +6,7 @@ import java.awt.image.ImageObserver;
 
 public class Weapon {
   public static Weapon newPistol() { return new Weapon("Pistol", Color.RED, 10, 750, "images/pistol.png"); }
-  public static Weapon newRifle() { return new Weapon("Rifle", Color.RED.darker(), 25, 675, "images/rifle.png"); }
+  public static Weapon newRifle() { return new Weapon("Rifle", Color.RED.darker(), 25, 1025, "images/rifle.png"); }
 
   // -------
 
