@@ -24,6 +24,7 @@ public class Panel extends JPanel {
   ArrayList<Bullet> bullets = new ArrayList<Bullet>();
 
   ArrayList<Enemy> enemies = new ArrayList<Enemy>();
+  private int clearCount = 0;
 
   class Bullet {
     public int x, y;
@@ -158,6 +159,7 @@ public class Panel extends JPanel {
 
   Timer timer;
   boolean timerHasStarted = false;
+  boolean runTimer = true;
   
   JLabel scoreLabel;
   int score = 0;
@@ -260,7 +262,9 @@ public class Panel extends JPanel {
 
   public class TimerListener implements ActionListener {
     public void actionPerformed(ActionEvent e) {
-      TIMER += UPDATE_MS / 1000.0;
+      if (runTimer) {
+        TIMER += UPDATE_MS / 1000.0;
+      }
 
       updatePlayer();
       if (player.health <= 0) return;
@@ -344,11 +348,20 @@ public class Panel extends JPanel {
             if (enemies.get(e).health <= 0) {
               addPoints(enemies.get(e).points);
               enemies.remove(e--);
+              checkEnemies();
               break;
             }
           }
         }
       }
+    }
+  }
+
+  private void checkEnemies() {
+    if (enemies.size() == 0) clearCount++;
+    if (clearCount == screens.length) {
+      runTimer = false;
+      System.out.println("\nCleared with a time of " + getTimer());
     }
   }
 
@@ -485,12 +498,9 @@ public class Panel extends JPanel {
 
     drawHealthBar(g);
 
-    int minutes = (int)TIMER / 60;
-    int seconds = (int)(TIMER % 60);
-    int ms = (int)((TIMER % 1) * 100);
     g.setColor(Color.WHITE);
     g.setFont(getFont().deriveFont(32f));
-    g.drawString(String.format("%02d:%02d:%02d", minutes, seconds, ms), 10, 752);
+    g.drawString(getTimer(), 10, 752);
 
     // DEBUG! View bounding boxes of walls:
     // for (Rect r : screens[currentScreen].walls.walls) {
@@ -514,6 +524,13 @@ public class Panel extends JPanel {
       final int textWidth = g.getFontMetrics().stringWidth(loseText);
       g.drawString(loseText, getWidth()/2 - textWidth/2, getHeight()/2);
     }
+  }
+
+  private String getTimer() {
+    final int minutes = (int)TIMER / 60;
+    final int seconds = (int)(TIMER % 60);
+    final int ms = (int)((TIMER % 1) * 100);
+    return String.format("%02d:%02d:%02d", minutes, seconds, ms);
   }
 
   private void drawHealthBar(Graphics g) {
