@@ -16,10 +16,10 @@ public class Panel extends JPanel {
   final int UPDATE_MS = 50;
   double TIMER = 0;
 
-  final Random random = new Random();
+  static final Random random = new Random();
 
   // player: 64px by 64px
-  Player player = new Player(getImage("images/player.png"), 128, 128, 100);
+  Player player = new Player(getImage("images/player.png"), 128, 128, 150);
   
   ArrayList<Bullet> bullets = new ArrayList<Bullet>();
 
@@ -58,7 +58,7 @@ public class Panel extends JPanel {
   private Screen[] screens = new Screen[] {
     new Screen(getImage("images/background1.jpg"), new Walls(new Rect(0, 0, 1024, 64), new Rect(0, 64, 64, 640), new Rect(0, 704, 320, 64), new Rect(448, 704, 576, 64), new Rect(960, 192, 64, 512)), -1, -1, 2, 1),
     new Screen(getImage("images/background2.jpg"), new Walls(new Rect(0, 0, 1024, 64), new Rect(960, 64, 64, 640), new Rect(0, 192, 64, 512), new Rect(0, 704, 320, 64), new Rect(448, 704, 576, 64), new Rect(160, 512, 64, 64), new Rect(592, 192, 262, 382)), -1, 0, 3, -1),
-    new Screen(null, null, 0, -1, -1, 3),
+    new Screen(getImage("images/background3.jpg"), new Walls(new Rect(0, 704, 1024, 64), new Rect(0, 64, 64, 640), new Rect(0, 0, 320, 64), new Rect(448, 0, 576, 64), new Rect(960, 192, 64, 512)), 0, -1, -1, 3),
     new Screen(getImage("images/background4.jpg"), new Walls(new Rect(0, 0, 320, 64), new Rect(448, 0, 576, 64), new Rect(0, 704, 1024, 64), new Rect(960, 64, 64, 640), new Rect(0, 192, 64, 512), new Rect(224, 64, 96, 256, false), new Rect(448, 64, 96, 640, false)), 1, 2, -1, -1)
   };
   private int currentScreen = 0;
@@ -85,6 +85,14 @@ public class Panel extends JPanel {
           final int x = i % 2 == 0 ? 820 : 720, y = 108 + i * 48;
           enemies.add(random.nextDouble() < 0.2 ? createRifleEnemy(x, y) : createDefaultEnemy(x, y));
         }
+        return;
+      }
+      if (screenNumber == 2) {
+        // aadi boss
+        Enemy boss = new Enemy("images/boss.png", "images/boss_hit.png", 500, 575, 256, 256, 1200, 5);
+        boss.weapon = Weapon.newRifle();
+        boss.weapon.speed /= 2;
+        enemies.add(boss);
         return;
       }
       for (int i = 0; i < 10; i++) {
@@ -149,12 +157,21 @@ public class Panel extends JPanel {
   }
 
   Timer timer;
+  boolean timerHasStarted = false;
+  
+  JLabel scoreLabel;
+  int score = 0;
   
   public Panel() {
     setBackground(BG_COLOR);
     // setPreferredSize();
     setMaximumSize(new Dimension(1024, 768));
     setSize(new Dimension(1024, 768));
+
+    scoreLabel = new JLabel("Score: 0");
+    scoreLabel.setForeground(Color.WHITE);
+    scoreLabel.setFont(getFont().deriveFont(20f));
+    add(scoreLabel);
 
     Mouse mouse = new Mouse();
     addMouseListener(mouse);
@@ -164,12 +181,17 @@ public class Panel extends JPanel {
 
     timer = new Timer(UPDATE_MS, new TimerListener());
     timer.setRepeats(true);
-    timer.start();
+    // timer.start();
 
     enemies = screens[currentScreen].enemies;
 
     // initialize variables
     // start timer
+  }
+
+  private void addPoints(int num) {
+    score += num;
+    scoreLabel.setText("Score: " + score);
   }
 
   private class KeyPress implements KeyListener {
@@ -179,6 +201,11 @@ public class Panel extends JPanel {
 
     public void keyTyped(KeyEvent e) {}
     public void keyPressed(KeyEvent e) {
+      if (!timerHasStarted) {
+        timer.start();
+        timerHasStarted = true;
+      }
+
       int key = e.getKeyCode();
       if (key == KeyEvent.VK_W || key == KeyEvent.VK_UP) dir_up = 1;
       else if (key == KeyEvent.VK_S || key == KeyEvent.VK_DOWN) dir_down = 1;
@@ -197,11 +224,15 @@ public class Panel extends JPanel {
   private class Mouse implements MouseListener, MouseMotionListener {
     public void mouseDragged(MouseEvent e) {
       mouse = e.getPoint();
+      if (!timerHasStarted) repaint();
     }
     public void mouseMoved(MouseEvent e) {
       mouse = e.getPoint();
+      if (!timerHasStarted) repaint();
     }
     public void mousePressed(MouseEvent e) {
+      if (!timerHasStarted) return;
+
       double dirX = mouse.x - player.x;
       double dirY = mouse.y - player.y;
       final double magnitude = invSqrt(dirX * dirX + dirY * dirY);
@@ -283,7 +314,7 @@ public class Panel extends JPanel {
 
         // change target
         if (random.nextDouble() < 0.5 * (UPDATE_MS / 1000.0)) {
-          en.target = new Point(random.nextInt(currentScreen == 3 ? 575 : 64, 960), random.nextInt(64, 704));
+          en.target = new Point(random.nextInt(currentScreen == 3 ? 575 : 64, 960), random.nextInt(currentScreen == 2 ? 350 : 64, 704));
         }
 
         // fire bullet
@@ -293,6 +324,14 @@ public class Panel extends JPanel {
           final double magnitude = invSqrt(dirX * dirX + dirY * dirY);
           dirX *= magnitude; dirY *= magnitude;
           bullets.add(new Bullet(en.weapon.bulletColor, (int)en.x, (int)en.y, en.weapon.speed * dirX, en.weapon.speed * dirY, en.weapon.damage, false));
+          if (currentScreen == 2) { // don't worry bout it
+            dirX *= random.nextDouble(0.9, 1.1);
+            dirY *= random.nextDouble(0.9, 1.1);
+            bullets.add(new Bullet(en.weapon.bulletColor, (int)en.x, (int)en.y, en.weapon.speed * dirY, en.weapon.speed * dirX, en.weapon.damage, false));
+            dirX *= random.nextDouble(0.9, 1.1);
+            dirY *= random.nextDouble(0.9, 1.1);
+            bullets.add(new Bullet(en.weapon.bulletColor, (int)en.x, (int)en.y, en.weapon.speed * -dirY, en.weapon.speed * -dirX, en.weapon.damage, false));
+          }
         }
 
         // bullet collisions
@@ -303,6 +342,7 @@ public class Panel extends JPanel {
             enemies.get(e).hit = true;
             bullets.remove(i--);
             if (enemies.get(e).health <= 0) {
+              addPoints(enemies.get(e).points);
               enemies.remove(e--);
               break;
             }

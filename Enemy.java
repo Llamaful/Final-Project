@@ -10,7 +10,7 @@ public class Enemy implements Sprite {
   public Image image;
   public Weapon weapon;
   public double x, y, health, MAX_HEALTH, speed = 200, firePercentage;
-  public int width, height;
+  public int width, height, points;
   public Rectangle bounds;
   public Point target;
 
@@ -23,6 +23,7 @@ public class Enemy implements Sprite {
     bounds = new Rectangle((int)x - width/2, (int)y - height/2, width, height);
     target = new Point((int)x, (int)y);
     weapon = Weapon.newPistol(); weapon.speed /= 2;
+    points = (int)(MAX_HEALTH/10 + 10 + Panel.random.nextInt(5));
     hit = false;
     hitImage = Panel.getImage(hitPathname);
   }
