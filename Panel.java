@@ -14,6 +14,7 @@ public class Panel extends JPanel {
   public static final Color BG_COLOR = Color.decode("0x181819");
 
   final int UPDATE_MS = 50;
+  double TIMER = 0;
 
   final Random random = new Random();
 
@@ -228,6 +229,8 @@ public class Panel extends JPanel {
 
   public class TimerListener implements ActionListener {
     public void actionPerformed(ActionEvent e) {
+      TIMER += UPDATE_MS / 1000.0;
+
       updatePlayer();
       if (player.health <= 0) return;
       updateBullet();
@@ -441,6 +444,13 @@ public class Panel extends JPanel {
     }
 
     drawHealthBar(g);
+
+    int minutes = (int)TIMER / 60;
+    int seconds = (int)(TIMER % 60);
+    int ms = (int)((TIMER % 1) * 100);
+    g.setColor(Color.WHITE);
+    g.setFont(getFont().deriveFont(32f));
+    g.drawString(String.format("%02d:%02d:%02d", minutes, seconds, ms), 10, 752);
 
     // DEBUG! View bounding boxes of walls:
     // for (Rect r : screens[currentScreen].walls.walls) {
