@@ -1,3 +1,4 @@
+package com.aadivohragame;
 import java.awt.Rectangle;
 
 /**
