@@ -14,8 +14,10 @@ import java.util.Random;
 public class Panel extends JPanel {
   public static final Color BG_COLOR = Color.decode("0x181819");
 
+  final boolean SPEEDRUN_DEBUG = true;
+
   final int UPDATE_MS = 50;
-  double TIMER = 0;
+  double TIMER = 0, screenTIMER = 0;
 
   static final Random random = new Random();
 
@@ -83,10 +85,14 @@ public class Panel extends JPanel {
     private void addEnemies() {
       if (walls == null) return;
       if (screenNumber == 3) {
+        int debug_rifleCount = 0;
         for (int i = 0; i < 12; i++) {
           final int x = i % 2 == 0 ? 820 : 720, y = 108 + i * 48;
-          enemies.add(random.nextDouble() < 0.2 ? createRifleEnemy(x, y) : createDefaultEnemy(x, y));
+          final double r = random.nextDouble();
+          enemies.add(r < 0.2 ? createRifleEnemy(x, y) : createDefaultEnemy(x, y));
+          if (r < 0.2) debug_rifleCount++;
         }
+        if (SPEEDRUN_DEBUG) System.out.println("Screen #3 spawned " + debug_rifleCount + " rifle enemies (" + String.format("%+.2f", (((double)debug_rifleCount / 12 - 0.2) * 100)) + "%)");
         return;
       }
       if (screenNumber == 2) {
@@ -104,6 +110,8 @@ public class Panel extends JPanel {
       if (screenNumber == 1) {
         enemies.add(createRifleEnemy(530, 640));
         enemies.add(createRifleEnemy(725, 135));
+      } else if (SPEEDRUN_DEBUG) {
+        System.out.println("\nLoading map...");
       }
     }
     private Point getRandomPointWithin() {
@@ -207,6 +215,9 @@ public class Panel extends JPanel {
       if (!timerHasStarted) {
         timer.start();
         timerHasStarted = true;
+        if (SPEEDRUN_DEBUG) {
+          System.out.println("\n> Beginning speedrun at " + java.time.format.DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(java.time.LocalDateTime.now()));
+        }
       }
 
       int key = e.getKeyCode();
@@ -265,6 +276,7 @@ public class Panel extends JPanel {
     public void actionPerformed(ActionEvent e) {
       if (runTimer) {
         TIMER += UPDATE_MS / 1000.0;
+        screenTIMER += UPDATE_MS / 1000.0;
       }
 
       updatePlayer();
@@ -362,7 +374,7 @@ public class Panel extends JPanel {
     if (enemies.size() == 0) clearCount++;
     if (clearCount == screens.length) {
       runTimer = false;
-      System.out.println("\nCleared with a time of " + getTimer());
+      if (SPEEDRUN_DEBUG) System.out.println("\nCleared with a time of " + getTimer(TIMER) + "\n");
     }
   }
 
@@ -385,6 +397,8 @@ public class Panel extends JPanel {
 
   private boolean switchScreen(int screen) {
     if (screen < 0 || screen >= screens.length) return false;
+    if (SPEEDRUN_DEBUG) System.out.println("> Exited screen #" + String.format("%02d", currentScreen+1) + " with a time of " + getTimer(screenTIMER));
+    screenTIMER = 0;
     screens[currentScreen].enemies = enemies;
     currentScreen = screen;
     enemies = screens[currentScreen].enemies;
@@ -501,7 +515,7 @@ public class Panel extends JPanel {
 
     g.setColor(Color.WHITE);
     g.setFont(getFont().deriveFont(32f));
-    g.drawString(getTimer(), 10, 752);
+    g.drawString(getTimer(TIMER), 10, 752);
 
     // DEBUG! View bounding boxes of walls:
     // for (Rect r : screens[currentScreen].walls.walls) {
@@ -517,8 +531,16 @@ public class Panel extends JPanel {
       try {
         GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(Font.createFont(Font.TRUETYPE_FONT, new File("Mokoto Glitch Mark.ttf")));
       } catch (IOException|FontFormatException e) {
-        e.printStackTrace();
+        // e.printStackTrace();
+
+        // second attempt
+        try {
+          GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(Font.createFont(Font.TRUETYPE_FONT, new File("com/aadivohragame/Mokoto Glitch Mark.ttf")));
+        } catch (IOException|FontFormatException e2) {
+          System.out.println("\nError: Font \"Mokoto Glitch Mark.ttf\" could not be loaded!\n");
+        }
       }
+      if (SPEEDRUN_DEBUG) System.out.println("\nDied with a time of " + getTimer(TIMER) + "\n");
       Font big = new Font("mokoto glitch mark I", Font.BOLD, 128);
       g.setFont(big);
       final String loseText = "You died!";
@@ -527,10 +549,10 @@ public class Panel extends JPanel {
     }
   }
 
-  private String getTimer() {
-    final int minutes = (int)TIMER / 60;
-    final int seconds = (int)(TIMER % 60);
-    final int ms = (int)((TIMER % 1) * 100);
+  private String getTimer(double t) {
+    final int minutes = (int)t / 60;
+    final int seconds = (int)(t % 60);
+    final int ms = (int)((t % 1) * 100);
     return String.format("%02d:%02d:%02d", minutes, seconds, ms);
   }
 
